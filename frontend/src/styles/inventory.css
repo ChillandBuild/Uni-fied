@@ -1,0 +1,296 @@
+/* src/styles/inventory.css */
+/* Styles from inventory-management project — scoped under .inv-page to avoid conflicts */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+
+/* ════════════════════════════════
+   LIST HEADER
+════════════════════════════════ */
+.inv-page .list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.inv-page .record-count {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.inv-page .btn-new {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #0f172a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.inv-page .btn-new:hover { background: #1e293b; }
+
+/* ════════════════════════════════
+   FORM TOPBAR
+════════════════════════════════ */
+.inv-page .form-topbar { margin-bottom: 14px; }
+
+.inv-page .btn-back {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.inv-page .btn-back:hover { text-decoration: underline; }
+
+/* ════════════════════════════════
+   FORM CARD
+════════════════════════════════ */
+.inv-page .form-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.inv-page .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.inv-page .field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.inv-page .field input,
+.inv-page .field select {
+  padding: 9px 11px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13.5px;
+  outline: none;
+  background: #fff;
+  color: #111827;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.inv-page .field input:focus,
+.inv-page .field select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+.inv-page .row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.inv-page .cylinder-row {
+  align-items: flex-end;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.inv-page .section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+
+.inv-page .btn-remove {
+  padding: 8px 11px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-bottom: 1px;
+}
+
+.inv-page .btn-remove:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+
+.inv-page .btn-add-cyl {
+  font-size: 12.5px;
+  color: #3b82f6;
+  background: none;
+  border: 1px dashed #93c5fd;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  font-family: inherit;
+}
+
+.inv-page .btn-add-cyl:hover { background: #eff6ff; }
+
+/* ════════════════════════════════
+   FORM ACTIONS
+════════════════════════════════ */
+.inv-page .form-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 4px;
+}
+
+.inv-page .btn-save {
+  padding: 9px 22px;
+  border-radius: 8px;
+  border: 1px solid #fbbf24;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+.inv-page .btn-save:hover { background: #fef3c7; }
+
+.inv-page .btn-post {
+  padding: 9px 22px;
+  border-radius: 8px;
+  border: 1px solid #6ee7b7;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+.inv-page .btn-post:hover { background: #d1fae5; }
+
+.inv-page .btn-cancel {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: transparent;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.inv-page .btn-cancel:hover { background: #f9fafb; }
+
+/* ════════════════════════════════
+   LIST CARD + TABLE
+════════════════════════════════ */
+.inv-page .list-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.inv-page .empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.inv-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.inv-page th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  border-bottom: 1px solid #f3f4f6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f9fafb;
+}
+
+.inv-page td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.inv-page tr:last-child td { border-bottom: none; }
+.inv-page tr:hover td { background: #f9fafb; }
+
+/* ════════════════════════════════
+   BADGES
+════════════════════════════════ */
+.inv-page .badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.inv-page .badge-draft {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.inv-page .badge-posted {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+/* ════════════════════════════════
+   EDIT BUTTON
+════════════════════════════════ */
+.inv-page .btn-edit {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #fbbf24;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.inv-page .btn-edit:hover { background: #fef3c7; }
+
+/* ════════════════════════════════
+   LOADING / ERROR
+════════════════════════════════ */
+.inv-page .loading-text { font-size: 13px; color: #9ca3af; margin-bottom: 10px; }
+.inv-page .error-text   { font-size: 13px; color: #ef4444; margin-bottom: 10px; }
