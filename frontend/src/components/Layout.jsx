@@ -117,11 +117,11 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({ Overview: true, Procurement: true, Inventory: true, Production: true });
   const location = useLocation();
-  const pageTitle = PAGE_TITLES[location.pathname] || 'SOGFusion';
+  const pageTitle = PAGE_TITLES[location.pathname] || 'Uni-fied';
 
   const toggleGroup = (group) => setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
 
-  const domainLabel = NAV.find(g => g.items.some(i => i.path === location.pathname))?.group || 'SOGFusion';
+  const domainLabel = NAV.find(g => g.items.some(i => i.path === location.pathname))?.group || 'Uni-fied';
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#f9fafb' }}>
@@ -138,7 +138,7 @@ export default function Layout() {
                 <Building2 size={16} color="white" />
               </div>
               <div>
-                <div className="text-white font-bold text-sm">SOGFusion</div>
+                <div className="text-white font-bold text-sm">Uni-fied</div>
                 <div className="text-white/40 text-[10px]">Gas ERP · Unified</div>
               </div>
             </div>
@@ -222,7 +222,7 @@ export default function Layout() {
         <header className="bg-white border-b border-[#e5e7eb] px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-sm">
           <div>
             <h1 className="text-sm font-semibold text-[#111827]">{pageTitle}</h1>
-            <p className="text-[11px] text-[#9ca3af] mt-0.5">SOGFusion · {domainLabel}</p>
+            <p className="text-[11px] text-[#9ca3af] mt-0.5">Uni-fied · {domainLabel}</p>
           </div>
           <div className="flex items-center gap-3">
             <button className="p-2 rounded-lg hover:bg-[#f3f4f6] relative">

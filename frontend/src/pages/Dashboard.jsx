@@ -23,7 +23,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-[#111827]">Overview</h2>
-        <span className="text-sm text-[#6b7280]">SOGFusion — Live</span>
+        <span className="text-sm text-[#6b7280]">Uni-fied — Live</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, i) => {
