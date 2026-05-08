@@ -72,7 +72,6 @@ export default function App() {
               <Route path="gas-procurement" element={<GasProcurement />} />
               <Route path="gas-issues" element={<GasIssues />} />
               <Route path="loss-records" element={<LossRecords />} />
-              <Route path="cylinder-filling" element={<CylinderFilling />} />
               <Route path="cylinder-movement" element={<CylinderMovement />} />
               <Route path="dispatch" element={<Dispatch />} />
               <Route path="cylinder-returns" element={<CylinderReturns />} />
@@ -91,6 +90,7 @@ export default function App() {
               <Route path="inventory" element={<FilledInventory />} />
               <Route path="batch-summary" element={<BatchSummary />} />
               <Route path="empty-cylinder-issue" element={<EmptyCylinderIssue />} />
+              <Route path="cylinder-filling" element={<CylinderFilling />} />
               <Route path="execution-entry" element={<ExecutionEntry />} />
             </Route>
           </Route>

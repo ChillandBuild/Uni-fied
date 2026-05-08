@@ -64,3 +64,14 @@ def update_item(batch_number: str, serial_number: str, data: BatchItemUpdate, db
     if not row:
         raise HTTPException(404, "Batch item not found")
     return row
+
+
+@router.delete("/{batch_number}/items/{serial_number}", status_code=204)
+def remove_item(batch_number: str, serial_number: str, db=Depends(get_db)):
+    batch = crud.get_batch(db, batch_number)
+    if not batch:
+        raise HTTPException(404, "Batch not found")
+    if batch.get("status") == "Completed":
+        raise HTTPException(400, "Cannot remove items from a posted batch")
+    if not crud.delete_batch_item(db, batch_number, serial_number):
+        raise HTTPException(404, "Batch item not found")

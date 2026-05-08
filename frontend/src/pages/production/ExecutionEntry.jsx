@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/api';
-import { Save, RefreshCcw } from 'lucide-react';
+import { Save, RefreshCcw, CheckCircle, XCircle } from 'lucide-react';
 
 export default function ExecutionEntry() {
   const { batches, fetchBatches } = useApp();
@@ -148,9 +148,15 @@ export default function ExecutionEntry() {
                 <td className="px-5 py-3.5 text-[#374151]">{b.shift}</td>
                 <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${b.status === 'Completed' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#e8f0fe] text-[#1a56db]'}`}>{b.status}</span></td>
                 <td className="px-5 py-3.5">
-                  <button onClick={() => handleSelectBatch(b)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c3aed] text-white rounded-lg text-xs font-medium hover:bg-[#6d28d9]">
-                    Open
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => handleSelectBatch(b)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c3aed] text-white rounded-lg text-xs font-medium hover:bg-[#6d28d9]">
+                      Open
+                    </button>
+                    {b.status !== 'Completed' && <>
+                      <button onClick={async()=>{await api.patch(`/production/batches/${b.batch_number}/status`,{status:'Completed'});await fetchBatches();showMsg('Batch approved!');}} className="p-1.5 rounded-lg hover:bg-[#dcfce7] text-[#16a34a]" title="Approve"><CheckCircle size={14}/></button>
+                      <button onClick={async()=>{await api.patch(`/production/batches/${b.batch_number}/status`,{status:'Rejected'});await fetchBatches();showMsg('Batch rejected');}} className="p-1.5 rounded-lg hover:bg-[#fee2e2] text-[#dc2626]" title="Reject"><XCircle size={14}/></button>
+                    </>}
+                  </div>
                 </td>
               </tr>
             ))}

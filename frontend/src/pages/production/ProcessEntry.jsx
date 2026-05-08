@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { Save, CheckCircle, XCircle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/api';
 
@@ -44,6 +44,12 @@ export default function ProcessEntry() {
         <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-[#e5e7eb]">
             <h3 className="text-sm font-semibold text-[#374151]">Items in {selectedBatch}</h3>
+            <div className="flex items-center gap-2">
+              {batches.find(b=>b.batch_number===selectedBatch)?.status !== 'Completed' && <>
+                <button onClick={async()=>{await api.patch(`/production/batches/${selectedBatch}/status`,{status:'Completed'});await fetchBatches();showMsg('Batch approved!');}} className="p-1.5 rounded-lg hover:bg-[#dcfce7] text-[#16a34a]" title="Approve"><CheckCircle size={14}/></button>
+                <button onClick={async()=>{await api.patch(`/production/batches/${selectedBatch}/status`,{status:'Rejected'});await fetchBatches();showMsg('Batch rejected');}} className="p-1.5 rounded-lg hover:bg-[#fee2e2] text-[#dc2626]" title="Reject"><XCircle size={14}/></button>
+              </>}
+            </div>
           </div>
           {items.length === 0 ? (
             <div className="text-center py-12 text-[#6b7280] text-sm">No items in this batch yet.</div>

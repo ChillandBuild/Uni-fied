@@ -32,3 +32,12 @@ def get_movement(movement_id: str, db=Depends(get_db)):
     if not row:
         raise HTTPException(404, "Movement entry not found")
     return row
+
+
+@router.patch("/{movement_id}/status", response_model=CylinderMovementOut)
+def update_movement_status(movement_id: str, body: dict, db=Depends(get_db)):
+    row = crud.get_movement(db, movement_id)
+    if not row:
+        raise HTTPException(404, "Movement entry not found")
+    is_posted = body.get("is_posted", True)
+    return crud.update_movement_status(db, movement_id, is_posted)

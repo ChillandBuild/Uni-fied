@@ -48,3 +48,14 @@ def list_movements(conn: MySQLConnection) -> List[Dict]:
         rows = _rows(result)
     cursor.close()
     return rows
+
+
+def update_movement_status(conn: MySQLConnection, movement_id: str, is_posted: bool) -> Optional[Dict]:
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE cylinder_movement_entries SET is_posted = %s WHERE movement_id = %s",
+        (is_posted, movement_id),
+    )
+    conn.commit()
+    cursor.close()
+    return get_movement(conn, movement_id)

@@ -42,7 +42,6 @@ const NAV = [
       { path: '/inventory/gas-procurement', label: 'Gas Procurement', icon: Droplets },
       { path: '/inventory/gas-issues', label: 'Gas Issues', icon: Send },
       { path: '/inventory/loss-records', label: 'Loss Records', icon: AlertTriangle },
-      { path: '/inventory/cylinder-filling', label: 'Cylinder Filling', icon: Cylinder },
       { path: '/inventory/cylinder-movement', label: 'Cylinder Movement', icon: ArrowLeftRight },
       { path: '/inventory/location-tracker', label: 'Location Tracker', icon: MapPin },
       { path: '/inventory/dispatch', label: 'Dispatch', icon: Truck },
@@ -57,6 +56,7 @@ const NAV = [
       { path: '/production/batch-creation', label: 'Batch Creation', icon: Layers },
       { path: '/production/batch-summary', label: 'Batch Summary', icon: ClipboardList },
       { path: '/production/empty-cylinder-issue', label: 'Empty Cylinder Issue', icon: Archive },
+      { path: '/production/cylinder-filling', label: 'Cylinder Filling', icon: Cylinder },
       { path: '/production/filling', label: 'Process Entry', icon: Settings2 },
       { path: '/production/execution-entry', label: 'Execution Entry', icon: ListChecks },
       { path: '/production/qc', label: 'Quality Check', icon: ClipboardCheck },
@@ -86,7 +86,6 @@ const PAGE_TITLES = {
   '/inventory/gas-procurement': 'Gas Procurement',
   '/inventory/gas-issues': 'Gas Issues',
   '/inventory/loss-records': 'Loss Records',
-  '/inventory/cylinder-filling': 'Cylinder Filling',
   '/inventory/cylinder-movement': 'Cylinder Movement',
   '/inventory/dispatch': 'Dispatch',
   '/inventory/cylinder-returns': 'Cylinder Returns',
@@ -103,6 +102,7 @@ const PAGE_TITLES = {
   '/production/inventory': 'Filled Inventory',
   '/production/batch-summary': 'Batch Summary',
   '/production/empty-cylinder-issue': 'Empty Cylinder Issue',
+  '/production/cylinder-filling': 'Cylinder Filling',
   '/production/execution-entry': 'Execution Entry',
 };
 

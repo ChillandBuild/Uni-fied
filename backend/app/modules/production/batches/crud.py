@@ -106,3 +106,15 @@ def update_batch_item(
     conn.commit()
     cursor.close()
     return row
+
+
+def delete_batch_item(conn: MySQLConnection, batch_number: str, serial_number: str) -> bool:
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM batch_items WHERE batch_number = %s AND serial_number = %s",
+        (batch_number, serial_number),
+    )
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    cursor.close()
+    return deleted

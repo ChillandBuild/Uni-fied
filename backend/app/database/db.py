@@ -1,34 +1,37 @@
+import threading
 import mysql.connector
 from mysql.connector import Error, pooling
 from app.core.config import settings
 
-# Pool is initialized at module import time (eager, not lazy).
-# This is safe because settings are fully loaded by the time this module is imported.
-# mysql-connector-python raises PoolError if a pool with the same name is created twice —
-# eager initialization at import time avoids the race condition that lazy initialization
-# creates under concurrent FastAPI startup.
+# Pool is lazily initialized on first use (after init_database has created the DB).
+# A threading lock prevents the pool from being created twice under concurrent access.
 _pool = None
-_pool_error = None
+_pool_lock = threading.Lock()
 
-try:
-    _pool = pooling.MySQLConnectionPool(
-        pool_name="sogfusion_pool",
-        pool_size=5,
-        host=settings.DB_HOST,
-        port=settings.DB_PORT,
-        user=settings.DB_USER,
-        password=settings.DB_PASSWORD,
-        database=settings.DB_NAME,
-        autocommit=False,
-    )
-except Exception as e:
-    _pool_error = e
+
+def _ensure_pool():
+    """Create the connection pool if it doesn't exist yet."""
+    global _pool
+    if _pool is not None:
+        return
+    with _pool_lock:
+        if _pool is not None:
+            return
+        _pool = pooling.MySQLConnectionPool(
+            pool_name="sogfusion_pool",
+            pool_size=5,
+            host=settings.DB_HOST,
+            port=settings.DB_PORT,
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+            database=settings.DB_NAME,
+            autocommit=False,
+        )
 
 
 def get_connection():
     """Get a pooled connection. Used by FastAPI route handlers in production."""
-    if _pool is None:
-        raise RuntimeError(f"MySQL connection pool unavailable: {_pool_error}") from _pool_error
+    _ensure_pool()
     return _pool.get_connection()
 
 
