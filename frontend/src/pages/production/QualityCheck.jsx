@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, ChevronRight, CheckCircle } from 'lucide-react';
+import { Save, Eye, CheckCircle } from 'lucide-react';
 import { useSortableTable, SortableHeader } from '../../hooks/useSortableTable';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/api';
@@ -11,8 +11,25 @@ export default function QualityCheck() {
   const [edits, setEdits] = useState({});
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState(null);
+  const [batchStatuses, setBatchStatuses] = useState({});
 
   useEffect(() => { fetchBatches(); }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const s = {};
+      for (const b of batches) {
+        try {
+          const d = await api.get('/production/batches/' + b.batch_number);
+          const its = d.items || [];
+          const done = its.filter(i => i.qc_status === 'Passed' || i.qc_status === 'Failed').length;
+          s[b.batch_number] = its.length > 0 && done === its.length ? 'Passed' : 'Pending';
+        } catch { s[b.batch_number] = 'Pending'; }
+      }
+      setBatchStatuses(s);
+    };
+    if (batches.length) load();
+  }, [batches]);
 
   const showMsg = (t, type = 'success') => { setMsg({ text: t, type }); setTimeout(() => setMsg(null), 3000); };
 
@@ -41,7 +58,7 @@ export default function QualityCheck() {
           try {
             await api.patch('/production/batches/' + activeBatch.batch_number + '/items/' + item.serial_number, fieldsOnly);
             saved++;
-          } catch {}
+          } catch { }
         }
       }
     }
@@ -65,7 +82,7 @@ export default function QualityCheck() {
           qc_status: finalStatus,
         });
         saved++;
-      } catch {}
+      } catch { }
     }
     const detail = await api.get('/production/batches/' + activeBatch.batch_number);
     setItems(detail.items || []);
@@ -102,7 +119,7 @@ export default function QualityCheck() {
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-[#111827]">Quality Check</h2>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allDone ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allDone ? 'Posted' : 'Draft'}</span>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allDone ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allDone ? 'Passed' : 'Pending'}</span>
             </div>
             <p className="text-sm text-[#6b7280] mt-1">
               Batch: <span className="font-semibold text-[#7c3aed]">{activeBatch.batch_number}</span> · {activeBatch.gas_type} · {passed} passed, {failed} failed, {items.length - passed - failed} pending
@@ -111,8 +128,8 @@ export default function QualityCheck() {
           <div className="flex items-center gap-3">
             {!allDone && (
               <>
-                <button onClick={handleSaveAll} className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#374151] rounded-lg text-sm font-medium border border-[#e5e7eb] hover:bg-[#f3f4f6]"><Save size={15}/>Save Draft</button>
-                <button onClick={handlePostAll} className="flex items-center gap-2 px-5 py-2.5 bg-[#7c3aed] text-white rounded-lg text-sm font-medium hover:bg-[#6d28d9]"><CheckCircle size={15}/>Confirm & Post</button>
+                <button onClick={handleSaveAll} className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#374151] rounded-lg text-sm font-medium border border-[#e5e7eb] hover:bg-[#f3f4f6]"><Save size={15} />Save Draft</button>
+                <button onClick={handlePostAll} className="flex items-center gap-2 px-5 py-2.5 bg-[#7c3aed] text-white rounded-lg text-sm font-medium hover:bg-[#6d28d9]"><CheckCircle size={15} />Confirm & Post</button>
               </>
             )}
             <button onClick={() => { setActiveBatch(null); setItems([]); setEdits({}); }} className="px-4 py-2 rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f3f4f6] text-sm">← Back</button>
@@ -169,7 +186,7 @@ export default function QualityCheck() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {!posted && <button onClick={() => handleSaveItem(item)} className="p-1.5 rounded-lg bg-[#7c3aed] text-white hover:bg-[#6d28d9]"><Save size={13}/></button>}
+                      {!posted && <button onClick={() => handleSaveItem(item)} className="p-1.5 rounded-lg bg-[#7c3aed] text-white hover:bg-[#6d28d9]"><Save size={13} /></button>}
                     </td>
                   </tr>
                 );
@@ -194,11 +211,11 @@ export default function QualityCheck() {
         <table className="w-full text-sm">
           <thead className="border-b border-[#e5e7eb]">
             <tr>
-              <SortableHeader label="Batch Number" sortKey="batch_number" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5"/>
-              <SortableHeader label="Date" sortKey="batch_date" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5"/>
-              <SortableHeader label="Gas Type" sortKey="gas_type" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5"/>
-              <SortableHeader label="Operator" sortKey="operator_name" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5"/>
-              <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5"/>
+              <SortableHeader label="Batch Number" sortKey="batch_number" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5" />
+              <SortableHeader label="Date" sortKey="batch_date" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5" />
+              <SortableHeader label="Gas Type" sortKey="gas_type" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5" />
+              <SortableHeader label="Operator" sortKey="operator_name" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5" />
+              <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} className="px-5 py-3.5" />
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#6b7280] uppercase bg-[#f9fafb]">Actions</th>
             </tr>
           </thead>
@@ -210,9 +227,9 @@ export default function QualityCheck() {
                 <td className="px-5 py-3.5 text-[#374151]">{b.batch_date}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.gas_type}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.operator_name}</td>
-                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${b.status === 'Completed' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{b.status}</span></td>
+                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${batchStatuses[b.batch_number] === 'Passed' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{batchStatuses[b.batch_number] || 'Pending'}</span></td>
                 <td className="px-5 py-3.5">
-                  <button onClick={() => handleSelectBatch(b)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c3aed] text-white rounded-lg text-xs font-medium hover:bg-[#6d28d9]">Open <ChevronRight size={12}/></button>
+                  <button onClick={() => handleSelectBatch(b)} className="p-1.5 rounded-lg hover:bg-[#f3e8ff] text-[#7c3aed]" title="View"><Eye size={14} /></button>
                 </td>
               </tr>
             ))}

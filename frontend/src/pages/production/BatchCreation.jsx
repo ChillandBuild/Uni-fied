@@ -216,8 +216,9 @@ export default function BatchCreation() {
         </div>
 
         {/* Cylinder Assignment Section */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Available Cylinders */}
+        <div className={`grid gap-4 ${isCompleted ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {/* Available Cylinders — hidden when posted */}
+          {!isCompleted && (
           <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
             <div className="px-5 py-3.5 border-b border-[#e5e7eb] bg-[#f9fafb]">
               <div className="flex items-center justify-between mb-2">
@@ -254,6 +255,7 @@ export default function BatchCreation() {
               ))}
             </div>
           </div>
+          )}
 
           {/* Assigned to Batch */}
           <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
@@ -276,7 +278,7 @@ export default function BatchCreation() {
                       <div className="text-xs text-[#6b7280]">{item.item_status || item.cylinder_type || 'Issued'}</div>
                     </div>
                   </div>
-                  {(!ro || (ro && !isCompleted)) && (
+                  {!isCompleted && (
                     <button
                       onClick={() => handleUnassign(item.serial_number)}
                       className="p-1.5 rounded-lg hover:bg-[#fee2e2] text-[#dc2626] transition-colors"

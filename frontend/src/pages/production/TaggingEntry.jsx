@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, ChevronRight, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Save, Eye, CheckCircle, ShieldAlert } from 'lucide-react';
 import { useSortableTable, SortableHeader } from '../../hooks/useSortableTable';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/api';
@@ -11,8 +11,29 @@ export default function TaggingEntry() {
   const [edits, setEdits] = useState({});
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState(null);
+  const [batchStatuses, setBatchStatuses] = useState({});
+  const [eligibleBatches, setEligibleBatches] = useState(new Set());
 
   useEffect(() => { fetchBatches(); }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const s = {};
+      const eligible = new Set();
+      for (const b of batches) {
+        try {
+          const d = await api.get('/production/batches/' + b.batch_number);
+          const el = (d.items || []).filter(i => i.qc_status === 'Passed' && i.seal_number);
+          if (el.length > 0) eligible.add(b.batch_number);
+          const tagged = el.filter(i => i.tag_number).length;
+          s[b.batch_number] = el.length > 0 && tagged === el.length ? 'Tagged' : 'Not Tagged';
+        } catch { s[b.batch_number] = 'Not Tagged'; }
+      }
+      setBatchStatuses(s);
+      setEligibleBatches(eligible);
+    };
+    if (batches.length) load();
+  }, [batches]);
   const showMsg = (t, type = 'success') => { setMsg({ text: t, type }); setTimeout(() => setMsg(null), 3000); };
 
   const handleSelectBatch = async (batch) => {
@@ -74,7 +95,7 @@ export default function TaggingEntry() {
     } catch (err) { showMsg('Error: ' + err.message, 'error'); }
   };
 
-  const filtered = batches.filter(b => b.batch_number?.toLowerCase().includes(search.toLowerCase()) || b.gas_type?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = batches.filter(b => eligibleBatches.has(b.batch_number) && (b.batch_number?.toLowerCase().includes(search.toLowerCase()) || b.gas_type?.toLowerCase().includes(search.toLowerCase())));
   const { sorted, sortConfig, requestSort } = useSortableTable(filtered);
 
   if (activeBatch) {
@@ -87,7 +108,7 @@ export default function TaggingEntry() {
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-[#111827]">Tagging Entry</h2>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allTagged ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allTagged ? 'Posted' : 'Draft'}</span>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allTagged ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allTagged ? 'Tagged' : 'Not Tagged'}</span>
             </div>
             <p className="text-sm text-[#6b7280] mt-1">Batch: <span className="font-semibold text-[#7c3aed]">{activeBatch.batch_number}</span> · {activeBatch.gas_type} · {tagged}/{items.length} tagged</p>
             {items.length === 0 && <p className="text-sm text-[#dc2626] mt-1 flex items-center gap-1"><ShieldAlert size={14}/> No sealed & QC-passed cylinders. Complete Sealing first.</p>}
@@ -148,8 +169,8 @@ export default function TaggingEntry() {
                 <td className="px-5 py-3.5 text-[#374151]">{b.batch_date}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.gas_type}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.operator_name}</td>
-                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${b.status==='Completed'?'bg-[#dcfce7] text-[#16a34a]':'bg-[#f3e8ff] text-[#6b21a8]'}`}>{b.status}</span></td>
-                <td className="px-5 py-3.5"><button onClick={()=>handleSelectBatch(b)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c3aed] text-white rounded-lg text-xs font-medium hover:bg-[#6d28d9]">Open <ChevronRight size={12}/></button></td>
+                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${batchStatuses[b.batch_number]==='Tagged'?'bg-[#dcfce7] text-[#16a34a]':'bg-[#f3e8ff] text-[#6b21a8]'}`}>{batchStatuses[b.batch_number] || 'Not Tagged'}</span></td>
+                <td className="px-5 py-3.5"><button onClick={()=>handleSelectBatch(b)} className="p-1.5 rounded-lg hover:bg-[#f3e8ff] text-[#7c3aed]" title="View"><Eye size={14}/></button></td>
               </tr>))}
           </tbody>
         </table>

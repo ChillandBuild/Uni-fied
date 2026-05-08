@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, ChevronRight, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Save, Eye, CheckCircle, ShieldAlert } from 'lucide-react';
 import { useSortableTable, SortableHeader } from '../../hooks/useSortableTable';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/api';
@@ -11,8 +11,29 @@ export default function SealingEntry() {
   const [edits, setEdits] = useState({});
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState(null);
+  const [batchStatuses, setBatchStatuses] = useState({});
+  const [eligibleBatches, setEligibleBatches] = useState(new Set());
 
   useEffect(() => { fetchBatches(); }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const s = {};
+      const eligible = new Set();
+      for (const b of batches) {
+        try {
+          const d = await api.get('/production/batches/' + b.batch_number);
+          const passed = (d.items || []).filter(i => i.qc_status === 'Passed');
+          if (passed.length > 0) eligible.add(b.batch_number);
+          const sealed = passed.filter(i => i.seal_number).length;
+          s[b.batch_number] = passed.length > 0 && sealed === passed.length ? 'Sealed' : 'Not Sealed';
+        } catch { s[b.batch_number] = 'Not Sealed'; }
+      }
+      setBatchStatuses(s);
+      setEligibleBatches(eligible);
+    };
+    if (batches.length) load();
+  }, [batches]);
   const showMsg = (t, type = 'success') => { setMsg({ text: t, type }); setTimeout(() => setMsg(null), 3000); };
 
   const handleSelectBatch = async (batch) => {
@@ -73,7 +94,7 @@ export default function SealingEntry() {
     } catch (err) { showMsg('Error: ' + err.message, 'error'); }
   };
 
-  const filtered = batches.filter(b => b.batch_number?.toLowerCase().includes(search.toLowerCase()) || b.gas_type?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = batches.filter(b => eligibleBatches.has(b.batch_number) && (b.batch_number?.toLowerCase().includes(search.toLowerCase()) || b.gas_type?.toLowerCase().includes(search.toLowerCase())));
   const { sorted, sortConfig, requestSort } = useSortableTable(filtered);
 
   if (activeBatch) {
@@ -86,7 +107,7 @@ export default function SealingEntry() {
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-[#111827]">Sealing Entry</h2>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allSealed ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allSealed ? 'Posted' : 'Draft'}</span>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allSealed ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allSealed ? 'Sealed' : 'Not Sealed'}</span>
             </div>
             <p className="text-sm text-[#6b7280] mt-1">Batch: <span className="font-semibold text-[#7c3aed]">{activeBatch.batch_number}</span> · {activeBatch.gas_type} · {sealed}/{items.length} sealed</p>
             {items.length === 0 && <p className="text-sm text-[#dc2626] mt-1 flex items-center gap-1"><ShieldAlert size={14}/> No QC-passed cylinders. Complete Quality Check first.</p>}
@@ -147,8 +168,8 @@ export default function SealingEntry() {
                 <td className="px-5 py-3.5 text-[#374151]">{b.batch_date}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.gas_type}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.operator_name}</td>
-                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${b.status==='Completed'?'bg-[#dcfce7] text-[#16a34a]':'bg-[#f3e8ff] text-[#6b21a8]'}`}>{b.status}</span></td>
-                <td className="px-5 py-3.5"><button onClick={()=>handleSelectBatch(b)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c3aed] text-white rounded-lg text-xs font-medium hover:bg-[#6d28d9]">Open <ChevronRight size={12}/></button></td>
+                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${batchStatuses[b.batch_number]==='Sealed'?'bg-[#dcfce7] text-[#16a34a]':'bg-[#f3e8ff] text-[#6b21a8]'}`}>{batchStatuses[b.batch_number] || 'Not Sealed'}</span></td>
+                <td className="px-5 py-3.5"><button onClick={()=>handleSelectBatch(b)} className="p-1.5 rounded-lg hover:bg-[#f3e8ff] text-[#7c3aed]" title="View"><Eye size={14}/></button></td>
               </tr>))}
           </tbody>
         </table>

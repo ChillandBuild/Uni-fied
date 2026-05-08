@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, ChevronRight, CheckCircle } from 'lucide-react';
+import { Save, Eye, CheckCircle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useSortableTable, SortableHeader } from '../../hooks/useSortableTable';
 import { api } from '../../lib/api';
@@ -11,8 +11,26 @@ export default function CylinderFilling() {
   const [edits, setEdits] = useState({});
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState(null);
+  const [batchStatuses, setBatchStatuses] = useState({});
 
   useEffect(() => { fetchBatches(); }, []);
+
+  // Compute real filling status per batch
+  useEffect(() => {
+    const loadStatuses = async () => {
+      const statuses = {};
+      for (const b of batches) {
+        try {
+          const detail = await api.get('/production/batches/' + b.batch_number);
+          const its = detail.items || [];
+          const filled = its.filter(i => i.item_status === 'Filled').length;
+          statuses[b.batch_number] = its.length > 0 && filled === its.length ? 'Filled' : 'Not Filled';
+        } catch { statuses[b.batch_number] = 'Not Filled'; }
+      }
+      setBatchStatuses(statuses);
+    };
+    if (batches.length) loadStatuses();
+  }, [batches]);
 
   const showMsg = (t, type = 'success') => { setMsg({ text: t, type }); setTimeout(() => setMsg(null), 3000); };
 
@@ -115,7 +133,7 @@ export default function CylinderFilling() {
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-[#111827]">Cylinder Filling</h2>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allFilled ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allFilled ? 'Posted' : 'Draft'}</span>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${allFilled ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{allFilled ? 'Filled' : 'Not Filled'}</span>
             </div>
             <p className="text-sm text-[#6b7280] mt-1">
               Batch: <span className="font-semibold text-[#7c3aed]">{activeBatch.batch_number}</span> · {activeBatch.gas_type} · {filled}/{items.length} filled
@@ -160,7 +178,7 @@ export default function CylinderFilling() {
                     </td>
                     <td className="px-4 py-3 font-semibold text-[#374151]">{(out - inp).toFixed(2)}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${posted ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#e8f0fe] text-[#1a56db]'}`}>{item.item_status || 'Issued'}</span>
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${posted ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#e8f0fe] text-[#1a56db]'}`}>{posted ? 'Filled' : 'Not Filled'}</span>
                     </td>
                     <td className="px-4 py-3">
                       <input value={getVal(item, 'remarks')} onChange={e => setEdit(item.serial_number, 'remarks', e.target.value)}
@@ -211,11 +229,9 @@ export default function CylinderFilling() {
                 <td className="px-5 py-3.5 text-[#374151]">{b.gas_type}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.operator_name}</td>
                 <td className="px-5 py-3.5 text-[#374151]">{b.shift}</td>
-                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${b.status === 'Completed' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{b.status}</span></td>
+                <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${batchStatuses[b.batch_number] === 'Filled' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{batchStatuses[b.batch_number] || 'Not Filled'}</span></td>
                 <td className="px-5 py-3.5">
-                  <button onClick={() => handleSelectBatch(b)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c3aed] text-white rounded-lg text-xs font-medium hover:bg-[#6d28d9]">
-                    Open <ChevronRight size={12}/>
-                  </button>
+                  <button onClick={() => handleSelectBatch(b)} className="p-1.5 rounded-lg hover:bg-[#f3e8ff] text-[#7c3aed]" title="View"><Eye size={14}/></button>
                 </td>
               </tr>
             ))}

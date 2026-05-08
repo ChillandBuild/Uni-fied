@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ShieldAlert } from 'lucide-react';
+import { Eye, ShieldAlert } from 'lucide-react';
 import { useSortableTable, SortableHeader } from '../../hooks/useSortableTable';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/api';
@@ -10,8 +10,24 @@ export default function FilledInventory() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState(null);
+  const [eligibleBatches, setEligibleBatches] = useState(new Set());
 
   useEffect(() => { fetchBatches(); }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const eligible = new Set();
+      for (const b of batches) {
+        try {
+          const d = await api.get('/production/batches/' + b.batch_number);
+          const tagged = (d.items || []).filter(i => i.qc_status === 'Passed' && i.seal_number && i.tag_number);
+          if (tagged.length > 0) eligible.add(b.batch_number);
+        } catch {}
+      }
+      setEligibleBatches(eligible);
+    };
+    if (batches.length) load();
+  }, [batches]);
 
   const showMsg = (t, type = 'success') => { setMsg({ text: t, type }); setTimeout(() => setMsg(null), 3000); };
 
@@ -19,14 +35,14 @@ export default function FilledInventory() {
     try {
       const detail = await api.get('/production/batches/' + batch.batch_number);
       setActiveBatch(batch);
-      // Only show cylinders that passed QC, are sealed, and tagged
       setItems((detail.items || []).filter(i => i.qc_status === 'Passed' && i.seal_number && i.tag_number));
     } catch { showMsg('Failed to load batch', 'error'); }
   };
 
   const filtered = batches.filter(b =>
+    eligibleBatches.has(b.batch_number) && (
     b.batch_number?.toLowerCase().includes(search.toLowerCase()) ||
-    b.gas_type?.toLowerCase().includes(search.toLowerCase())
+    b.gas_type?.toLowerCase().includes(search.toLowerCase()))
   );
   const { sorted, sortConfig, requestSort } = useSortableTable(filtered);
 
@@ -110,7 +126,7 @@ export default function FilledInventory() {
                 <td className="px-5 py-3.5 text-[#374151]">{b.operator_name}</td>
                 <td className="px-5 py-3.5"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${b.status === 'Completed' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#f3e8ff] text-[#6b21a8]'}`}>{b.status}</span></td>
                 <td className="px-5 py-3.5">
-                  <button onClick={() => handleSelectBatch(b)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c3aed] text-white rounded-lg text-xs font-medium hover:bg-[#6d28d9]">Open <ChevronRight size={12}/></button>
+                  <button onClick={() => handleSelectBatch(b)} className="p-1.5 rounded-lg hover:bg-[#f3e8ff] text-[#7c3aed]" title="View"><Eye size={14}/></button>
                 </td>
               </tr>
             ))}
