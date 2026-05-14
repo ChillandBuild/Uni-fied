@@ -1,56 +1,42 @@
 import { useState, useEffect } from "react";
-import { format, parse } from "date-fns";
-import { useLookups } from "@/hooks/useLookups";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { CalendarIcon, Droplets, Save, Send, X, Pencil, ArrowRight, Info } from "lucide-react";
+import { CalendarIcon, Droplets, Save, Send, X, Pencil, ArrowRight } from "lucide-react";
 
-let entryCounter = 3005;
+const MEASUREMENT_METHODS = ["Manual Dip", "Float Gauge", "Electronic Sensor", "Ultrasonic", "Visual Inspection"];
+
+const inp = "w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 bg-white transition-colors";
+const inpDisabled = "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed";
 
 export function AddLevelEntryPage({ tank, onUpdate, onCancel, initialData = null, nextId = "ENT-3001" }) {
-  const { lookups, loading } = useLookups();
   const isEdit = !!initialData;
+
   const [form, setForm] = useState(
     initialData
       ? {
           entryId: initialData.entry_id || initialData.entryId,
-          tankId: initialData.tank_id || initialData.tankId || tank?.tank_id || tank?.tankId || tank?.name || "",
+          tankId: initialData.tank_id || initialData.tankId || tank?.tank_id || tank?.tankId || "",
           openingLevel: String(initialData.opening_level ?? initialData.openingLevel ?? tank?.current_level ?? tank?.level ?? ""),
-          quantityAdded: initialData.quantity_added ?? initialData.quantityAdded ?? "",
-          quantityIssued: initialData.quantity_issued ?? initialData.quantityIssued ?? "",
+          quantityAdded: String(initialData.quantity_added ?? initialData.quantityAdded ?? ""),
+          quantityIssued: String(initialData.quantity_issued ?? initialData.quantityIssued ?? ""),
           measurementMethod: initialData.measurement_method || initialData.measurementMethod || "Manual Dip",
+          date: initialData.date || initialData.datetime || new Date().toISOString().split("T")[0],
         }
       : {
           entryId: nextId,
-          tankId: tank?.tank_id || tank?.tankId || tank?.name || "",
+          tankId: tank?.tank_id || tank?.tankId || "",
           openingLevel: String(tank?.current_level ?? tank?.level ?? ""),
           quantityAdded: "",
           quantityIssued: "",
           measurementMethod: "Manual Dip",
+          date: new Date().toISOString().split("T")[0],
         }
   );
 
   useEffect(() => {
     if (!isEdit && nextId) {
-      setForm(prev => ({ ...prev, entryId: nextId }));
+      setForm((prev) => ({ ...prev, entryId: nextId }));
     }
   }, [nextId, isEdit]);
 
-  const [datetime, setDatetime] = useState(
-    initialData?.datetime
-      ? (() => { 
-          try { 
-            const d = new Date(initialData.datetime); 
-            if (!isNaN(d)) return d;
-            return parse(initialData.datetime, "dd MMM yyyy", new Date()); 
-          } catch { return undefined; } 
-        })()
-      : new Date()
-  );
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
@@ -66,23 +52,19 @@ export function AddLevelEntryPage({ tank, onUpdate, onCancel, initialData = null
 
   const validate = () => {
     const e = {};
-    if (!datetime && !form.datetime) e.datetime = "Date is required";
+    if (!form.date) e.date = "Date is required";
     return e;
   };
 
   const handleSubmit = (mode) => {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    const d = datetime || (form.datetime ? new Date(form.datetime) : null);
-    const isoDate = d
-      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-      : form.datetime;
     onUpdate({
       ...tank,
       level: closingLevel,
       _entry: {
         ...form,
-        datetime: isoDate,
+        datetime: form.date,
         closingLevel,
         isPosted: mode === "save" ? 0 : 1,
       },
@@ -94,10 +76,10 @@ export function AddLevelEntryPage({ tank, onUpdate, onCancel, initialData = null
 
   return (
     <div className="grid grid-cols-3 gap-5">
-      {/* ── Left: Form (2/3) ── */}
-      <div className="col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+      {/* Left Form (2/3) */}
+      <div className="col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-3.5 bg-gradient-to-r from-teal-600 to-cyan-600 shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 shrink-0">
           <div className="bg-white/20 rounded-lg p-1.5">
             {isEdit ? <Pencil className="w-4 h-4 text-white" /> : <Droplets className="w-4 h-4 text-white" />}
           </div>
@@ -106,127 +88,128 @@ export function AddLevelEntryPage({ tank, onUpdate, onCancel, initialData = null
               {isEdit ? "Edit Level Entry" : `Level Entry — ${tank?.name}`}
             </h2>
             <p className="text-teal-100 text-xs">
-              {isEdit ? "Update fields. Save keeps as Saved; Post locks the record." : `${tank?.gasType} · ${tank?.location}`}
+              {isEdit ? "Update fields. Save keeps editable; Post locks permanently." : `${tank?.gasType} · ${tank?.location}`}
             </p>
           </div>
           <span className="ml-auto bg-white/20 text-white text-xs px-2.5 py-1 rounded-full font-mono">{form.entryId}</span>
         </div>
 
-        <div className="p-5 space-y-4 flex-1">
-          {/* Level visual */}
-          <div className="grid grid-cols-3 gap-3 bg-slate-50 rounded-lg p-3 border border-slate-100">
+        <div className="p-5 space-y-5 flex-1">
+          {/* Level Visual */}
+          <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded-lg p-4 border border-gray-100">
             <div className="text-center">
-              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-1">Opening</p>
-              <p className="text-xl font-bold text-slate-700">{form.openingLevel} L</p>
-              <div className="mt-1.5 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+              <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-1">Opening</p>
+              <p className="text-xl font-bold text-gray-700">{form.openingLevel || 0} L</p>
+              <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-400 rounded-full" style={{ width: `${oldPct}%` }} />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">{oldPct}% capacity</p>
+              <p className="text-[11px] text-gray-400 mt-1">{oldPct}% capacity</p>
             </div>
             <div className="flex items-center justify-center">
-              <ArrowRight className="w-5 h-5 text-slate-300" />
+              <ArrowRight className="w-5 h-5 text-gray-300" />
             </div>
             <div className="text-center">
-              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-1">New Closing</p>
+              <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-1">New Closing</p>
               <p className={`text-xl font-bold ${closingLevel < 0 ? "text-red-600" : "text-teal-600"}`}>{closingLevel} L</p>
-              <div className="mt-1.5 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+              <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${closingLevel < 0 ? "bg-red-400" : "bg-teal-400"}`} style={{ width: `${Math.max(0, newPct)}%` }} />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">{newPct}% capacity</p>
+              <p className="text-[11px] text-gray-400 mt-1">{newPct}% capacity</p>
             </div>
           </div>
 
           {/* Row 1: Tank ID + Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tank ID</Label>
-              <Input value={form.tankId} disabled className="h-9 text-sm bg-slate-50 text-slate-500 font-mono" />
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tank ID</label>
+              <input value={form.tankId} disabled className={inpDisabled} />
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start text-left h-9 text-sm font-normal ${!datetime && !form.datetime ? "text-slate-400" : ""} ${errors.datetime ? "border-red-400" : ""}`}
-                  >
-                    <CalendarIcon className="w-3.5 h-3.5 mr-2 text-slate-400" />
-                    {datetime ? format(datetime, "dd MMM yyyy") : (form.datetime || "Select date")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={datetime} onSelect={setDatetime} initialFocus />
-                </PopoverContent>
-              </Popover>
-              {errors.datetime && <p className="text-xs text-red-500">{errors.datetime}</p>}
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Date <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  name="date"
+                  type="date"
+                  value={form.date}
+                  onChange={handleChange}
+                  className={`${inp} pl-9 ${errors.date ? "border-red-400 focus:border-red-400 focus:ring-red-400/30" : ""}`}
+                />
+              </div>
+              {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
             </div>
           </div>
 
           {/* Row 2: Opening + Added + Issued */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Opening Level (L)</Label>
-              <Input value={form.openingLevel} disabled className="h-9 text-sm bg-slate-50 font-mono text-slate-600" />
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Opening Level (L)</label>
+              <input value={form.openingLevel} disabled className={inpDisabled} />
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Qty Added (L)</Label>
-              <Input name="quantityAdded" type="number" min="0" value={form.quantityAdded} onChange={handleChange} placeholder="0" className="h-9 text-sm" />
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Qty Added (L)</label>
+              <input name="quantityAdded" type="number" min="0" value={form.quantityAdded} onChange={handleChange} placeholder="0" className={inp} />
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Qty Issued (L)</Label>
-              <Input name="quantityIssued" type="number" min="0" value={form.quantityIssued} onChange={handleChange} placeholder="0" className="h-9 text-sm" />
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Qty Issued (L)</label>
+              <input name="quantityIssued" type="number" min="0" value={form.quantityIssued} onChange={handleChange} placeholder="0" className={inp} />
             </div>
           </div>
 
-          {/* Row 3: Closing (auto) + Method */}
+          {/* Row 3: Closing + Method */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Closing Level (Auto-Calculated)</Label>
-              <div className={`h-9 px-3 flex items-center rounded-md border font-mono text-sm font-bold ${closingLevel < 0 ? "border-red-200 bg-red-50 text-red-700" : "border-teal-200 bg-teal-50 text-teal-700"}`}>
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Closing Level (Auto-Calculated)</label>
+              <div className={`h-10 px-3 flex items-center rounded-lg border font-mono text-sm font-bold ${
+                closingLevel < 0 ? "border-red-200 bg-red-50 text-red-700" : "border-teal-200 bg-teal-50 text-teal-700"
+              }`}>
                 {closingLevel} L
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Measurement Method</Label>
-              <Select value={form.measurementMethod || "Manual Dip"} onValueChange={(v) => setForm((p) => ({ ...p, measurementMethod: v }))}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {lookups.measurementMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Measurement Method</label>
+              <select
+                name="measurementMethod"
+                value={form.measurementMethod}
+                onChange={handleChange}
+                className={inp}
+              >
+                {MEASUREMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-100 bg-slate-50 shrink-0">
-          <Button variant="outline" size="sm" onClick={onCancel} className="gap-1.5 h-8 text-slate-600">
+        {/* Footer Buttons */}
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50 shrink-0">
+          <button onClick={onCancel} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
             <X className="w-3.5 h-3.5" /> Cancel
-          </Button>
-          <Button size="sm" onClick={() => handleSubmit("save")} className="bg-blue-600 hover:bg-blue-700 gap-1.5 h-8">
-            <Save className="w-3.5 h-3.5" /> Save
-          </Button>
-          <Button size="sm" onClick={() => handleSubmit("post")} className="bg-green-600 hover:bg-green-700 gap-1.5 h-8">
-            <Send className="w-3.5 h-3.5" /> Post
-          </Button>
+          </button>
+          <button onClick={() => handleSubmit("save")} className="flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+            <Save className="w-3.5 h-3.5" /> Save Draft
+          </button>
+          <button onClick={() => handleSubmit("post")} className="flex items-center gap-1.5 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm">
+            <Send className="w-3.5 h-3.5" /> Post & Lock
+          </button>
         </div>
       </div>
 
-      {/* ── Right: Info panel (1/3) ── */}
+      {/* Right Info Panel (1/3) */}
       <div className="col-span-1 space-y-4">
-        {/* Tank info card */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Tank Info</p>
+        {/* Tank Info */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Tank Info</p>
           <div className="space-y-2">
             {[
               { label: "Tank Name", value: tank?.name },
               { label: "Gas Type", value: tank?.gasType },
               { label: "Location", value: tank?.location },
               { label: "Total Capacity", value: tank?.capacity ? `${tank.capacity} L` : "—" },
-              { label: "Current Level", value: `${form.openingLevel} L (${oldPct}%)` },
+              { label: "Current Level", value: `${form.openingLevel || 0} L (${oldPct}%)` },
             ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between items-center py-1 border-b border-slate-50 last:border-0">
-                <span className="text-xs text-slate-400">{label}</span>
-                <span className="text-xs font-semibold text-slate-700">{value || "—"}</span>
+              <div key={label} className="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
+                <span className="text-xs text-gray-400">{label}</span>
+                <span className="text-xs font-semibold text-gray-700">{value || "—"}</span>
               </div>
             ))}
           </div>
@@ -246,20 +229,20 @@ export function AddLevelEntryPage({ tank, onUpdate, onCancel, initialData = null
         </div>
 
         {/* Guide */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Submission Guide</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Submission Guide</p>
           <div className="flex items-start gap-2">
             <div className="bg-blue-100 rounded p-1 mt-0.5 shrink-0"><Save className="w-3 h-3 text-blue-600" /></div>
             <div>
-              <p className="text-xs font-semibold text-slate-700">Save</p>
-              <p className="text-xs text-slate-500 mt-0.5">Saves the entry. You can edit it later.</p>
+              <p className="text-xs font-semibold text-gray-700">Save Draft</p>
+              <p className="text-xs text-gray-500 mt-0.5">Saves the entry. You can edit it later.</p>
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <div className="bg-green-100 rounded p-1 mt-0.5 shrink-0"><Send className="w-3 h-3 text-green-600" /></div>
+            <div className="bg-teal-100 rounded p-1 mt-0.5 shrink-0"><Send className="w-3 h-3 text-teal-600" /></div>
             <div>
-              <p className="text-xs font-semibold text-slate-700">Post</p>
-              <p className="text-xs text-slate-500 mt-0.5">Finalizes & locks the entry permanently.</p>
+              <p className="text-xs font-semibold text-gray-700">Post & Lock</p>
+              <p className="text-xs text-gray-500 mt-0.5">Finalizes & locks the entry permanently.</p>
             </div>
           </div>
         </div>

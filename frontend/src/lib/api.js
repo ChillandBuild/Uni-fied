@@ -1,22 +1,32 @@
 const BASE = '/api/v1';
 
+async function handleResponse(r) {
+  if (r.ok) {
+    if (r.status === 204) return null;
+    return r.json();
+  }
+  let msg = r.statusText;
+  try { const t = await r.text(); if (t) msg = t; } catch {}
+  throw new Error(msg);
+}
+
 export const api = {
-  get: (path) => fetch(`${BASE}${path}`).then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); }),
-  post: (path, body) => fetch(`${BASE}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => { if (!r.ok) throw r.text().then(t => { throw new Error(t); }); return r.json(); }),
-  put: (path, body) => fetch(`${BASE}${path}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => { if (!r.ok) throw r.text().then(t => { throw new Error(t || r.statusText); }); return r.json(); }),
-  patch: (path, body = {}) => fetch(`${BASE}${path}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => { if (!r.ok) throw r.text().then(t => { throw new Error(t || r.statusText); }); return r.json(); }),
-  delete: (path) => fetch(`${BASE}${path}`, { method: 'DELETE' }).then(r => { if (!r.ok) throw new Error(r.statusText); if (r.status === 204) return null; return r.json(); }),
+  get: (path) =>
+    fetch(`${BASE}${path}`).then(handleResponse),
+  post: (path, body) =>
+    fetch(`${BASE}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(handleResponse),
+  put: (path, body) =>
+    fetch(`${BASE}${path}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(handleResponse),
+  patch: (path, body = {}) =>
+    fetch(`${BASE}${path}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(handleResponse),
+  delete: (path) =>
+    fetch(`${BASE}${path}`, { method: 'DELETE' }).then(handleResponse),
 };
 
 export async function fetchApi(path, options = {}) {
-  const { raw, method = 'GET', body, headers = {} } = options;
-  const opts = { method, headers: { "Content-Type": "application/json", ...headers } };
+  const { method = 'GET', body, headers = {} } = options;
+  const opts = { method, headers: { 'Content-Type': 'application/json', ...headers } };
   if (body) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
   const res = await fetch(`${BASE}${path}`, opts);
-  if (raw) return res;
-  if (!res.ok) {
-     const t = await res.text();
-     throw new Error(t || res.statusText);
-  }
-  return res.json();
+  return handleResponse(res);
 }
