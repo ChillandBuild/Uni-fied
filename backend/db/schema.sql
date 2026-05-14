@@ -256,8 +256,10 @@ CREATE TABLE IF NOT EXISTS gas_issues (
     id INT AUTO_INCREMENT PRIMARY KEY,
     issue_code VARCHAR(20) NOT NULL UNIQUE,
     tank_id VARCHAR(20) NOT NULL,
+    gas_type VARCHAR(50) DEFAULT NULL,
     issue_date DATE NOT NULL,
     quantity_issued DOUBLE NOT NULL,
+    filling_batch_id VARCHAR(100) DEFAULT NULL,
     issued_to VARCHAR(200) NOT NULL,
     purpose VARCHAR(200) DEFAULT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'draft',
@@ -270,13 +272,89 @@ CREATE TABLE IF NOT EXISTS loss_records (
     loss_code VARCHAR(20) NOT NULL UNIQUE,
     tank_id VARCHAR(20) NOT NULL,
     loss_date DATE NOT NULL,
+    expected_quantity DOUBLE DEFAULT NULL,
+    actual_quantity DOUBLE DEFAULT NULL,
     quantity_lost DOUBLE NOT NULL,
-    loss_type VARCHAR(80) NOT NULL,
+    loss_type VARCHAR(80) DEFAULT NULL,
     notes VARCHAR(500) DEFAULT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'draft',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tank_id) REFERENCES tanks(tank_id) ON DELETE RESTRICT
 );;
+
+CREATE TABLE IF NOT EXISTS tank_inventory_transactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tank_id VARCHAR(20) NOT NULL,
+    transaction_date DATE NOT NULL,
+    source_type VARCHAR(30) NOT NULL,
+    source_code VARCHAR(20) NOT NULL,
+    direction VARCHAR(10) NOT NULL,
+    quantity DOUBLE NOT NULL,
+    opening_level DOUBLE NOT NULL,
+    closing_level DOUBLE NOT NULL,
+    notes VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tank_id) REFERENCES tanks(tank_id) ON DELETE RESTRICT,
+    UNIQUE KEY uniq_tank_inventory_source (source_type, source_code)
+);;
+
+DROP PROCEDURE IF EXISTS usp_inventory_schema_migrate;;
+CREATE PROCEDURE usp_inventory_schema_migrate()
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'gas_issues'
+          AND COLUMN_NAME = 'gas_type'
+    ) THEN
+        ALTER TABLE gas_issues ADD COLUMN gas_type VARCHAR(50) DEFAULT NULL AFTER tank_id;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'gas_issues'
+          AND COLUMN_NAME = 'filling_batch_id'
+    ) THEN
+        ALTER TABLE gas_issues ADD COLUMN filling_batch_id VARCHAR(100) DEFAULT NULL AFTER quantity_issued;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'loss_records'
+          AND COLUMN_NAME = 'expected_quantity'
+    ) THEN
+        ALTER TABLE loss_records ADD COLUMN expected_quantity DOUBLE DEFAULT NULL AFTER loss_date;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'loss_records'
+          AND COLUMN_NAME = 'actual_quantity'
+    ) THEN
+        ALTER TABLE loss_records ADD COLUMN actual_quantity DOUBLE DEFAULT NULL AFTER expected_quantity;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'loss_records'
+          AND COLUMN_NAME = 'loss_type'
+          AND IS_NULLABLE = 'NO'
+    ) THEN
+        ALTER TABLE loss_records MODIFY COLUMN loss_type VARCHAR(80) DEFAULT NULL;
+    END IF;
+END;;
+
+CALL usp_inventory_schema_migrate();;
+DROP PROCEDURE IF EXISTS usp_inventory_schema_migrate;;
 
 CREATE TABLE IF NOT EXISTS cylinder_filling_entries (
     id INT AUTO_INCREMENT PRIMARY KEY,
