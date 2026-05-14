@@ -20,6 +20,7 @@ from app.modules.inventory.tank_readings.router import router as tank_readings_r
 from app.modules.inventory.gas_procurement.router import router as gas_procurement_router
 from app.modules.inventory.gas_issues.router import router as gas_issues_router
 from app.modules.inventory.loss_records.router import router as loss_records_router
+from app.modules.inventory.tank_inventory_transactions.router import router as tank_inventory_transactions_router
 
 # Task 13: Cylinder filling, movement, dispatch, returns
 from app.modules.inventory.cylinder_filling.router import router as cylinder_filling_router
@@ -77,6 +78,7 @@ app.include_router(tank_readings_router, prefix=API_PREFIX)
 app.include_router(gas_procurement_router, prefix=API_PREFIX)
 app.include_router(gas_issues_router, prefix=API_PREFIX)
 app.include_router(loss_records_router, prefix=API_PREFIX)
+app.include_router(tank_inventory_transactions_router, prefix=API_PREFIX)
 app.include_router(cylinder_filling_router, prefix=API_PREFIX)
 app.include_router(cylinder_movement_router, prefix=API_PREFIX)
 app.include_router(dispatch_router, prefix=API_PREFIX)

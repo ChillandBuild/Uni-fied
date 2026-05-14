@@ -49,6 +49,7 @@ def setup_test_database():
         try:
             _exec_sql_file(cursor, "db/schema.sql")
             _exec_sql_file(cursor, "db/procedures.sql")
+            cursor.callproc("usp_lkp_seed")
             conn.commit()
         finally:
             cursor.close()
