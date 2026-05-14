@@ -69,7 +69,7 @@ export default function GasProduction() {
   if (mode !== 'list') {
     const ro = mode === 'view';
     return (
-      <div className="max-w-4xl mx-auto">
+      <div>
         {msg && <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl text-sm font-medium shadow-lg ${msg.type === 'error' ? 'bg-[#fee2e2] text-[#dc2626]' : 'bg-[#dcfce7] text-[#16a34a]'}`}>{msg.text}</div>}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-[#111827]">{ro ? 'Production Entry Details' : 'New Gas Production Entry'}</h2>

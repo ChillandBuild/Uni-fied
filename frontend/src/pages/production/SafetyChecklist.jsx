@@ -41,7 +41,7 @@ export default function SafetyChecklist() {
   if (mode !== 'list') {
     const ro = mode === 'view';
     return (
-      <div className="max-w-3xl mx-auto">
+      <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-[#111827]">{ro ? 'Checklist Details' : 'New Safety Checklist'}</h2>
           <div className="flex items-center gap-3">
