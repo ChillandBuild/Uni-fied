@@ -14,13 +14,13 @@ def get_db():
         conn.close()
 
 
-@router.get("/", response_model=list[VendorOut])
+@router.get("", response_model=list[VendorOut])
 def list_vendors(active_only: bool = False, db=Depends(get_db)):
     return crud.list_vendors(db, active_only=active_only)
 
 
 
-@router.post("/", response_model=VendorOut, status_code=201)
+@router.post("", response_model=VendorOut, status_code=201)
 def create_vendor(data: VendorCreate, db=Depends(get_db)):
     return crud.create_vendor(db, data)
 

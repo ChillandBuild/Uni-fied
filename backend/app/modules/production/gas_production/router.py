@@ -3,6 +3,7 @@ from app.database.db import get_connection
 from app.modules.production.gas_production import crud
 from app.modules.production.gas_production.schemas import (
     GasProductionCreate,
+    GasProductionUpdate,
     GasProductionOut,
     GasProductionStatusUpdate,
 )
@@ -33,6 +34,18 @@ def create_production(data: GasProductionCreate, db=Depends(get_db)):
 @router.get("/{production_id}", response_model=GasProductionOut)
 def get_production(production_id: str, db=Depends(get_db)):
     row = crud.get_production(db, production_id)
+    if not row:
+        raise HTTPException(404, "Production record not found")
+    return row
+
+
+@router.put("/{production_id}", response_model=GasProductionOut)
+def update_production(production_id: str, data: GasProductionUpdate, db=Depends(get_db)):
+    """Edit a saved/draft production entry. Locked once Posted."""
+    try:
+        row = crud.update_production(db, production_id, data)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     if not row:
         raise HTTPException(404, "Production record not found")
     return row

@@ -19,6 +19,21 @@ class GasProductionCreate(BaseModel):
     remarks: Optional[str] = None
 
 
+class GasProductionUpdate(BaseModel):
+    prod_date: Optional[str] = None
+    plant_location: Optional[str] = None
+    gas_type: Optional[str] = None
+    shift: Optional[str] = None
+    machine_unit: Optional[str] = None
+    operator_name: Optional[str] = None
+    quantity_produced: Optional[float] = None
+    quantity_unit: Optional[str] = None
+    purity_level: Optional[float] = None
+    pressure_level: Optional[float] = None
+    linked_tank_id: Optional[str] = None
+    remarks: Optional[str] = None
+
+
 class GasProductionStatusUpdate(BaseModel):
     approval_status: str
 
