@@ -1,0 +1,29 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Local environment files
+**/.env
+!.env.example
+!backend/.env.example
+!backend/.env.docker
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+.venv/
+venv/
+
+# Frontend build / package manager output
+node_modules/
+dist/
+.vite/
+
+# Logs and process artifacts
+*.log
+*.err
+*.out
+.proc-*.log
+.proc-*.err

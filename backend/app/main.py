@@ -20,6 +20,7 @@ from app.modules.inventory.tank_readings.router import router as tank_readings_r
 from app.modules.inventory.gas_procurement.router import router as gas_procurement_router
 from app.modules.inventory.gas_issues.router import router as gas_issues_router
 from app.modules.inventory.loss_records.router import router as loss_records_router
+from app.modules.inventory.tank_inventory_transactions.router import router as tank_inventory_transactions_router
 
 # Task 13: Cylinder filling, movement, dispatch, returns
 from app.modules.inventory.cylinder_filling.router import router as cylinder_filling_router
@@ -35,6 +36,9 @@ from app.modules.production.batches.router import router as batches_router
 # Task 16: Dashboard
 from app.modules.dashboard.router import router as dashboard_router
 
+# Monitoring
+from app.modules.monitoring.router import router as monitoring_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -46,12 +50,12 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     lifespan=lifespan,
+    redirect_slashes=False, # Disable automatic trailing slash redirects to avoid CORS issues
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origins=["*"], # Allow all origins in development to avoid CORS issues with redirects
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -77,6 +81,7 @@ app.include_router(tank_readings_router, prefix=API_PREFIX)
 app.include_router(gas_procurement_router, prefix=API_PREFIX)
 app.include_router(gas_issues_router, prefix=API_PREFIX)
 app.include_router(loss_records_router, prefix=API_PREFIX)
+app.include_router(tank_inventory_transactions_router, prefix=API_PREFIX)
 app.include_router(cylinder_filling_router, prefix=API_PREFIX)
 app.include_router(cylinder_movement_router, prefix=API_PREFIX)
 app.include_router(dispatch_router, prefix=API_PREFIX)
@@ -89,6 +94,9 @@ app.include_router(batches_router, prefix=API_PREFIX)
 
 # Dashboard
 app.include_router(dashboard_router, prefix=API_PREFIX)
+
+# Monitoring
+app.include_router(monitoring_router, prefix=API_PREFIX)
 
 
 @app.get("/health", tags=["Health"])

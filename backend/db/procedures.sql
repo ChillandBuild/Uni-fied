@@ -274,9 +274,8 @@ CREATE PROCEDURE usp_gpr_create(
 )
 BEGIN
     INSERT INTO gas_procurements (procurement_code, vendor_name, date, gas_type,
-        quantity_received, tank_id, transport_details)
-    VALUES (p_code, p_vendor, p_date, p_gas, p_qty, p_tank, p_transport);
-    UPDATE tanks SET current_level = current_level + p_qty WHERE tank_id = p_tank;
+        quantity_received, tank_id, transport_details, status)
+    VALUES (p_code, p_vendor, p_date, p_gas, p_qty, p_tank, p_transport, 'draft');
     SELECT * FROM gas_procurements WHERE procurement_code = p_code;
 END;;
 
@@ -295,9 +294,8 @@ CREATE PROCEDURE usp_iss_create(
     IN p_to VARCHAR(200), IN p_purpose VARCHAR(200)
 )
 BEGIN
-    INSERT INTO gas_issues (issue_code, tank_id, issue_date, quantity_issued, issued_to, purpose)
-    VALUES (p_code, p_tank, p_date, p_qty, p_to, p_purpose);
-    UPDATE tanks SET current_level = current_level - p_qty WHERE tank_id = p_tank;
+    INSERT INTO gas_issues (issue_code, tank_id, issue_date, quantity_issued, issued_to, purpose, status)
+    VALUES (p_code, p_tank, p_date, p_qty, p_to, p_purpose, 'draft');
     SELECT * FROM gas_issues WHERE issue_code = p_code;
 END;;
 
@@ -316,9 +314,8 @@ CREATE PROCEDURE usp_lss_create(
     IN p_type VARCHAR(80), IN p_notes VARCHAR(500)
 )
 BEGIN
-    INSERT INTO loss_records (loss_code, tank_id, loss_date, quantity_lost, loss_type, notes)
-    VALUES (p_code, p_tank, p_date, p_qty, p_type, p_notes);
-    UPDATE tanks SET current_level = current_level - p_qty WHERE tank_id = p_tank;
+    INSERT INTO loss_records (loss_code, tank_id, loss_date, quantity_lost, loss_type, notes, status)
+    VALUES (p_code, p_tank, p_date, p_qty, p_type, p_notes, 'draft');
     SELECT * FROM loss_records WHERE loss_code = p_code;
 END;;
 
@@ -658,18 +655,57 @@ BEGIN
     SELECT * FROM gas_procurements WHERE procurement_code = p_code;
 END;;
 
+DROP PROCEDURE IF EXISTS usp_gpr_update;;
+CREATE PROCEDURE usp_gpr_update(
+    IN p_code VARCHAR(20), IN p_vendor VARCHAR(150),
+    IN p_date DATE, IN p_gas VARCHAR(50),
+    IN p_qty DOUBLE, IN p_tank VARCHAR(20), IN p_transport VARCHAR(255)
+)
+BEGIN
+    DECLARE p_status VARCHAR(20);
+
+    SELECT status INTO p_status FROM gas_procurements WHERE procurement_code = p_code;
+
+    IF p_status IS NULL THEN
+        SELECT 'Procurement not found' AS error;
+    ELSEIF LOWER(p_status) <> 'draft' THEN
+        SELECT 'Only draft procurements can be updated' AS error;
+    ELSE
+        UPDATE gas_procurements
+        SET
+            vendor_name = p_vendor,
+            date = p_date,
+            gas_type = p_gas,
+            quantity_received = p_qty,
+            tank_id = p_tank,
+            transport_details = p_transport
+        WHERE procurement_code = p_code;
+
+        SELECT * FROM gas_procurements WHERE procurement_code = p_code;
+    END IF;
+END;;
+
 -- ── GAS ISSUES ───────────────────────────────────────────────
 
 DROP PROCEDURE IF EXISTS usp_gis_create;;
 CREATE PROCEDURE usp_gis_create(
     IN p_code VARCHAR(20), IN p_tank VARCHAR(20),
     IN p_date DATE, IN p_qty DOUBLE,
-    IN p_to VARCHAR(200), IN p_purpose VARCHAR(200)
+    IN p_batch VARCHAR(100), IN p_to VARCHAR(200), IN p_purpose VARCHAR(200)
 )
 BEGIN
-    INSERT INTO gas_issues (issue_code, tank_id, issue_date, quantity_issued, issued_to, purpose)
-    VALUES (p_code, p_tank, p_date, p_qty, p_to, p_purpose);
-    UPDATE tanks SET current_level = current_level - p_qty WHERE tank_id = p_tank;
+    DECLARE p_gas VARCHAR(50);
+
+    SELECT gas_type INTO p_gas FROM tanks WHERE tank_id = p_tank;
+
+    INSERT INTO gas_issues (
+        issue_code, tank_id, gas_type, issue_date,
+        quantity_issued, filling_batch_id, issued_to, purpose, status
+    )
+    VALUES (
+        p_code, p_tank, p_gas, p_date,
+        p_qty, p_batch, COALESCE(p_to, p_batch, ''), p_purpose, 'draft'
+    );
     SELECT * FROM gas_issues WHERE issue_code = p_code;
 END;;
 
@@ -685,18 +721,57 @@ BEGIN
     SELECT * FROM gas_issues ORDER BY created_at DESC;
 END;;
 
+DROP PROCEDURE IF EXISTS usp_gis_update;;
+CREATE PROCEDURE usp_gis_update(
+    IN p_code VARCHAR(20), IN p_tank VARCHAR(20),
+    IN p_date DATE, IN p_qty DOUBLE,
+    IN p_batch VARCHAR(100), IN p_to VARCHAR(200), IN p_purpose VARCHAR(200)
+)
+BEGIN
+    DECLARE p_status VARCHAR(20);
+    DECLARE p_gas VARCHAR(50);
+
+    SELECT status INTO p_status FROM gas_issues WHERE issue_code = p_code;
+
+    IF p_status IS NULL THEN
+        SELECT 'Issue not found' AS error;
+    ELSEIF LOWER(p_status) <> 'draft' THEN
+        SELECT 'Only draft issues can be updated' AS error;
+    ELSE
+        SELECT gas_type INTO p_gas FROM tanks WHERE tank_id = p_tank;
+
+        UPDATE gas_issues
+        SET
+            tank_id = p_tank,
+            gas_type = p_gas,
+            issue_date = p_date,
+            quantity_issued = p_qty,
+            filling_batch_id = p_batch,
+            issued_to = COALESCE(p_to, p_batch, issued_to),
+            purpose = p_purpose
+        WHERE issue_code = p_code;
+
+        SELECT * FROM gas_issues WHERE issue_code = p_code;
+    END IF;
+END;;
+
 -- ── LOSS RECORDS ──────────────────────────────────────────────
 
 DROP PROCEDURE IF EXISTS usp_lsr_create;;
 CREATE PROCEDURE usp_lsr_create(
     IN p_code VARCHAR(20), IN p_tank VARCHAR(20),
-    IN p_date DATE, IN p_qty DOUBLE,
+    IN p_date DATE, IN p_expected DOUBLE, IN p_actual DOUBLE, IN p_qty DOUBLE,
     IN p_type VARCHAR(80), IN p_notes VARCHAR(500)
 )
 BEGIN
-    INSERT INTO loss_records (loss_code, tank_id, loss_date, quantity_lost, loss_type, notes)
-    VALUES (p_code, p_tank, p_date, p_qty, p_type, p_notes);
-    UPDATE tanks SET current_level = current_level - p_qty WHERE tank_id = p_tank;
+    INSERT INTO loss_records (
+        loss_code, tank_id, loss_date, expected_quantity, actual_quantity,
+        quantity_lost, loss_type, notes, status
+    )
+    VALUES (
+        p_code, p_tank, p_date, p_expected, p_actual,
+        p_qty, p_type, p_notes, 'draft'
+    );
     SELECT * FROM loss_records WHERE loss_code = p_code;
 END;;
 
@@ -710,6 +785,37 @@ DROP PROCEDURE IF EXISTS usp_lsr_list;;
 CREATE PROCEDURE usp_lsr_list()
 BEGIN
     SELECT * FROM loss_records ORDER BY created_at DESC;
+END;;
+
+DROP PROCEDURE IF EXISTS usp_lsr_update;;
+CREATE PROCEDURE usp_lsr_update(
+    IN p_code VARCHAR(20), IN p_tank VARCHAR(20),
+    IN p_date DATE, IN p_expected DOUBLE, IN p_actual DOUBLE, IN p_qty DOUBLE,
+    IN p_type VARCHAR(80), IN p_notes VARCHAR(500)
+)
+BEGIN
+    DECLARE p_status VARCHAR(20);
+
+    SELECT status INTO p_status FROM loss_records WHERE loss_code = p_code;
+
+    IF p_status IS NULL THEN
+        SELECT 'Loss record not found' AS error;
+    ELSEIF LOWER(p_status) <> 'draft' THEN
+        SELECT 'Only draft loss records can be updated' AS error;
+    ELSE
+        UPDATE loss_records
+        SET
+            tank_id = p_tank,
+            loss_date = p_date,
+            expected_quantity = p_expected,
+            actual_quantity = p_actual,
+            quantity_lost = p_qty,
+            loss_type = p_type,
+            notes = p_notes
+        WHERE loss_code = p_code;
+
+        SELECT * FROM loss_records WHERE loss_code = p_code;
+    END IF;
 END;;
 
 -- ── CYLINDER FILLING (get single) ────────────────────────────
@@ -778,4 +884,188 @@ DROP PROCEDURE IF EXISTS usp_ret_list;;
 CREATE PROCEDURE usp_ret_list()
 BEGIN
     SELECT * FROM return_entries ORDER BY created_at DESC;
+END;;
+
+-- ── GAS PROCUREMENT POSTING ──────────────────────────────────
+
+DROP PROCEDURE IF EXISTS usp_gpr_post;;
+CREATE PROCEDURE usp_gpr_post(IN p_code VARCHAR(20))
+BEGIN
+    DECLARE p_tank VARCHAR(20);
+    DECLARE p_qty DOUBLE;
+    DECLARE p_date DATE;
+    DECLARE p_vendor VARCHAR(150);
+    DECLARE tank_capacity DOUBLE;
+    DECLARE tank_level DOUBLE;
+    DECLARE p_status VARCHAR(20);
+    
+    SELECT tank_id, quantity_received, date, vendor_name, status
+    INTO p_tank, p_qty, p_date, p_vendor, p_status
+    FROM gas_procurements
+    WHERE procurement_code = p_code;
+    
+    IF p_tank IS NULL THEN
+        SELECT 'Procurement not found' AS error;
+    ELSEIF LOWER(p_status) = 'posted' THEN
+        SELECT 'Procurement already posted' AS error;
+    ELSE
+        SELECT capacity_value, current_level
+        INTO tank_capacity, tank_level
+        FROM tanks
+        WHERE tank_id = p_tank
+        FOR UPDATE;
+        
+        IF (tank_level + p_qty) > tank_capacity THEN
+            SELECT 'Exceeds tank capacity' AS error;
+        ELSE
+            UPDATE gas_procurements SET status = 'posted' WHERE procurement_code = p_code;
+            UPDATE tanks SET current_level = current_level + p_qty WHERE tank_id = p_tank;
+            INSERT INTO tank_inventory_transactions (
+                tank_id, transaction_date, source_type, source_code, direction,
+                quantity, opening_level, closing_level, notes
+            )
+            VALUES (
+                p_tank, p_date, 'Procurement', p_code, 'IN',
+                p_qty, tank_level, tank_level + p_qty, CONCAT('Vendor: ', COALESCE(p_vendor, ''))
+            );
+            SELECT * FROM gas_procurements WHERE procurement_code = p_code;
+        END IF;
+    END IF;
+END;;
+
+DROP PROCEDURE IF EXISTS usp_gpr_update_status;;
+CREATE PROCEDURE usp_gpr_update_status(IN p_code VARCHAR(20), IN p_status VARCHAR(20))
+BEGIN
+    UPDATE gas_procurements SET status = p_status WHERE procurement_code = p_code;
+    SELECT * FROM gas_procurements WHERE procurement_code = p_code;
+END;;
+
+-- ── GAS ISSUES POSTING ───────────────────────────────────────
+
+DROP PROCEDURE IF EXISTS usp_iss_post;;
+CREATE PROCEDURE usp_iss_post(IN p_code VARCHAR(20))
+BEGIN
+    DECLARE p_tank VARCHAR(20);
+    DECLARE p_qty DOUBLE;
+    DECLARE p_date DATE;
+    DECLARE p_batch VARCHAR(100);
+    DECLARE p_to VARCHAR(200);
+    DECLARE tank_level DOUBLE;
+    DECLARE p_status VARCHAR(20);
+    
+    SELECT tank_id, quantity_issued, issue_date, filling_batch_id, issued_to, status
+    INTO p_tank, p_qty, p_date, p_batch, p_to, p_status
+    FROM gas_issues
+    WHERE issue_code = p_code;
+    
+    IF p_tank IS NULL THEN
+        SELECT 'Issue not found' AS error;
+    ELSEIF LOWER(p_status) = 'posted' THEN
+        SELECT 'Issue already posted' AS error;
+    ELSE
+        SELECT current_level INTO tank_level FROM tanks WHERE tank_id = p_tank FOR UPDATE;
+        
+        IF p_qty > tank_level THEN
+            SELECT 'Insufficient gas in tank' AS error;
+        ELSE
+            UPDATE gas_issues SET status = 'posted' WHERE issue_code = p_code;
+            UPDATE tanks SET current_level = current_level - p_qty WHERE tank_id = p_tank;
+            INSERT INTO tank_inventory_transactions (
+                tank_id, transaction_date, source_type, source_code, direction,
+                quantity, opening_level, closing_level, notes
+            )
+            VALUES (
+                p_tank, p_date, 'Gas Issue', p_code, 'OUT',
+                p_qty, tank_level, tank_level - p_qty,
+                CONCAT('Batch: ', COALESCE(p_batch, ''), CASE WHEN p_to IS NOT NULL AND p_to <> '' THEN CONCAT(' / Ref: ', p_to) ELSE '' END)
+            );
+            SELECT * FROM gas_issues WHERE issue_code = p_code;
+        END IF;
+    END IF;
+END;;
+
+DROP PROCEDURE IF EXISTS usp_iss_update_status;;
+CREATE PROCEDURE usp_iss_update_status(IN p_code VARCHAR(20), IN p_status VARCHAR(20))
+BEGIN
+    UPDATE gas_issues SET status = p_status WHERE issue_code = p_code;
+    SELECT * FROM gas_issues WHERE issue_code = p_code;
+END;;
+
+-- ── LOSS RECORDS POSTING ─────────────────────────────────────
+
+DROP PROCEDURE IF EXISTS usp_lsr_post;;
+CREATE PROCEDURE usp_lsr_post(IN p_code VARCHAR(20))
+BEGIN
+    DECLARE p_tank VARCHAR(20);
+    DECLARE p_qty DOUBLE;
+    DECLARE p_date DATE;
+    DECLARE p_type VARCHAR(80);
+    DECLARE tank_level DOUBLE;
+    DECLARE p_status VARCHAR(20);
+    
+    SELECT tank_id, quantity_lost, loss_date, loss_type, status
+    INTO p_tank, p_qty, p_date, p_type, p_status
+    FROM loss_records
+    WHERE loss_code = p_code;
+    
+    IF p_tank IS NULL THEN
+        SELECT 'Loss record not found' AS error;
+    ELSEIF LOWER(p_status) = 'posted' THEN
+        SELECT 'Loss record already posted' AS error;
+    ELSE
+        SELECT current_level INTO tank_level FROM tanks WHERE tank_id = p_tank FOR UPDATE;
+        
+        IF p_qty > 0 THEN
+            IF p_qty > tank_level THEN
+                SELECT 'Loss quantity exceeds tank level' AS error;
+            ELSE
+                UPDATE loss_records SET status = 'posted' WHERE loss_code = p_code;
+                UPDATE tanks SET current_level = current_level - p_qty WHERE tank_id = p_tank;
+                INSERT INTO tank_inventory_transactions (
+                    tank_id, transaction_date, source_type, source_code, direction,
+                    quantity, opening_level, closing_level, notes
+                )
+                VALUES (
+                    p_tank, p_date, 'Loss Record', p_code, 'OUT',
+                    p_qty, tank_level, tank_level - p_qty, CONCAT('Reason: ', COALESCE(p_type, ''))
+                );
+                SELECT * FROM loss_records WHERE loss_code = p_code;
+            END IF;
+        ELSE
+            UPDATE loss_records SET status = 'posted' WHERE loss_code = p_code;
+            SELECT * FROM loss_records WHERE loss_code = p_code;
+        END IF;
+    END IF;
+END;;
+
+DROP PROCEDURE IF EXISTS usp_lsr_update_status;;
+CREATE PROCEDURE usp_lsr_update_status(IN p_code VARCHAR(20), IN p_status VARCHAR(20))
+BEGIN
+    UPDATE loss_records SET status = p_status WHERE loss_code = p_code;
+    SELECT * FROM loss_records WHERE loss_code = p_code;
+END;;
+
+-- ── TANK INVENTORY TRANSACTIONS ──────────────────────────────
+
+DROP PROCEDURE IF EXISTS usp_tit_list;;
+CREATE PROCEDURE usp_tit_list(
+    IN p_tank_id VARCHAR(20),
+    IN p_source_type VARCHAR(30),
+    IN p_source_code VARCHAR(20),
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_limit INT DEFAULT 20;
+
+    IF p_limit IS NOT NULL AND p_limit BETWEEN 1 AND 100 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    SELECT *
+    FROM tank_inventory_transactions
+    WHERE (p_tank_id IS NULL OR p_tank_id = '' OR tank_id = p_tank_id)
+      AND (p_source_type IS NULL OR p_source_type = '' OR source_type = p_source_type)
+      AND (p_source_code IS NULL OR p_source_code = '' OR source_code = p_source_code)
+    ORDER BY transaction_date DESC, created_at DESC, id DESC
+    LIMIT v_limit;
 END;;

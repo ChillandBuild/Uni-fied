@@ -22,7 +22,13 @@ export function AppProvider({ children }) {
   const [lookups, setLookups] = useState({});
 
   const fetchVendors = useCallback(async () => {
-    try { setVendors(await api.get('/procurement/vendors')); } catch {}
+    try {
+      const data = await api.get('/procurement/vendors');
+      setVendors(data);
+      return { ok: true, data };
+    } catch (error) {
+      return { ok: false, error };
+    }
   }, []);
 
   const fetchPRs = useCallback(async () => {
@@ -46,18 +52,33 @@ export function AppProvider({ children }) {
   }, []);
 
   const fetchTanks = useCallback(async () => {
-    try { setTanks(await api.get('/inventory/tanks')); } catch {}
+    try {
+      const data = await api.get('/inventory/tanks');
+      setTanks(data);
+      return { ok: true, data };
+    } catch (error) {
+      return { ok: false, error };
+    }
   }, []);
 
   const fetchBatches = useCallback(async () => {
-    try { setBatches(await api.get('/production/batches')); } catch {}
+    try {
+      const data = await api.get('/production/batches');
+      setBatches(data);
+      return { ok: true, data };
+    } catch (error) {
+      return { ok: false, error };
+    }
   }, []);
 
   const fetchLookup = useCallback(async (category) => {
     try {
-      const data = await api.get(`/lookups/?category=${category}`);
+      const data = await api.get(`/lookups?category=${category}`);
       setLookups(prev => ({ ...prev, [category]: data.map(d => d.value) }));
-    } catch {}
+      return { ok: true, data };
+    } catch (error) {
+      return { ok: false, error };
+    }
   }, []);
 
   useEffect(() => {

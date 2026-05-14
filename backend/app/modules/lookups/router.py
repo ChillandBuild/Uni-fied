@@ -14,6 +14,6 @@ def get_db():
         conn.close()
 
 
-@router.get("/", response_model=list[LookupOut])
+@router.get("", response_model=list[LookupOut])
 def list_lookups(category: str, db=Depends(get_db)):
     return crud.list_lookups(db, category)

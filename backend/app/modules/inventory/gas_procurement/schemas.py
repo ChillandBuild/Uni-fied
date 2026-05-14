@@ -11,6 +11,15 @@ class GasProcurementCreate(BaseModel):
     tank_id: str
     transport_details: Optional[str] = None
 
+
+class GasProcurementUpdate(BaseModel):
+    vendor_name: Optional[str] = None
+    date: Optional[date] = None
+    gas_type: Optional[str] = None
+    quantity_received: Optional[float] = None
+    tank_id: Optional[str] = None
+    transport_details: Optional[str] = None
+
 class GasProcurementOut(BaseModel):
     id: int
     procurement_code: str
