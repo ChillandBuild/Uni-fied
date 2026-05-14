@@ -73,7 +73,7 @@ export function AppProvider({ children }) {
 
   const fetchLookup = useCallback(async (category) => {
     try {
-      const data = await api.get(`/lookups/?category=${category}`);
+      const data = await api.get(`/lookups?category=${category}`);
       setLookups(prev => ({ ...prev, [category]: data.map(d => d.value) }));
       return { ok: true, data };
     } catch (error) {

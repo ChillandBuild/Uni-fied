@@ -237,6 +237,21 @@ CREATE TABLE IF NOT EXISTS level_entries (
     FOREIGN KEY (tank_id) REFERENCES tanks(tank_id) ON DELETE RESTRICT
 );;
 
+CREATE TABLE IF NOT EXISTS monitoring_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    entry_id VARCHAR(40) NOT NULL UNIQUE,
+    tank_id VARCHAR(20) NOT NULL,
+    date DATE NOT NULL,
+    opening_level DOUBLE NOT NULL DEFAULT 0,
+    quantity_added DOUBLE NOT NULL DEFAULT 0,
+    quantity_issued DOUBLE NOT NULL DEFAULT 0,
+    closing_level DOUBLE NOT NULL DEFAULT 0,
+    measurement_method VARCHAR(80) NOT NULL DEFAULT 'Manual Dip',
+    is_posted TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tank_id) REFERENCES tanks(tank_id) ON DELETE RESTRICT
+);;
+
 CREATE TABLE IF NOT EXISTS gas_procurements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     procurement_code VARCHAR(20) NOT NULL UNIQUE,

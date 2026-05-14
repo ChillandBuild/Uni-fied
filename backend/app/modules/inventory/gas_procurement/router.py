@@ -12,11 +12,11 @@ def get_db():
     finally:
         conn.close()
 
-@router.get("/", response_model=list[GasProcurementOut])
+@router.get("", response_model=list[GasProcurementOut])
 def list_procurements(db=Depends(get_db)):
     return crud.list_procurements(db)
 
-@router.post("/", response_model=GasProcurementOut, status_code=201)
+@router.post("", response_model=GasProcurementOut, status_code=201)
 def create_procurement(data: GasProcurementCreate, db=Depends(get_db)):
     if crud.get_procurement(db, data.procurement_code):
         raise HTTPException(409, "Procurement code already exists")

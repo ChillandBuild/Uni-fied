@@ -401,9 +401,24 @@ export default function GasProcurement() {
   }
 
   return (
-    <div>
+    <div className="space-y-5">
       {msg && <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl text-sm font-medium shadow-lg ${msg.type === 'error' ? 'bg-[#fee2e2] text-[#dc2626]' : 'bg-[#dcfce7] text-[#16a34a]'}`}>{msg.text}</div>}
-        <div className="flex items-center justify-between mb-5">
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Total Records', value: list.length, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
+          { label: 'Draft', value: list.filter(g => g.status === 'draft').length, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+          { label: 'Posted', value: list.filter(g => g.status === 'posted').length, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+        ].map(({ label, value, color, bg, border }) => (
+          <div key={label} className={`${bg} border ${border} rounded-xl px-5 py-4`}>
+            <p className="text-xs font-medium text-gray-500">{label}</p>
+            <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search procurement..." className="px-4 py-2 rounded-lg border border-[#e5e7eb] text-sm focus:outline-none focus:ring-2 focus:ring-[#0891b2]/30 w-64 bg-white" />
           <span className="text-sm text-[#6b7280]">{filtered.length} records</span>
@@ -429,8 +444,17 @@ export default function GasProcurement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e5e7eb]">
-            {listLoading && list.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-[#6b7280] text-sm">Loading procurement records...</td></tr>}
-            {!listLoading && sorted.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-[#6b7280] text-sm">No procurement records yet.</td></tr>}
+            {!listLoading && sorted.length === 0 && (
+              <tr><td colSpan={8}>
+                <div className="flex flex-col items-center justify-center py-14 gap-3">
+                  <div className="w-14 h-14 rounded-full bg-cyan-50 flex items-center justify-center">
+                    <Truck size={24} className="text-cyan-300" />
+                  </div>
+                  <p className="text-gray-500 font-medium text-sm">No procurement records yet</p>
+                  <p className="text-xs text-gray-400">Click "New Procurement" to record your first gas procurement</p>
+                </div>
+              </td></tr>
+            )}
             {sorted.map(g => (
               <tr key={g.procurement_code} className="hover:bg-[#f9fafb]">
                 <td className="px-5 py-3.5 font-medium text-[#0891b2]">{g.procurement_code}</td>
