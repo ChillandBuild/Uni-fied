@@ -6,19 +6,20 @@ const EMPTY = { serial: "", location: "Plant", cylinderStatus: "Filled" };
 
 export function useTracker() {
   const [formData, setFormData] = useState(EMPTY);
-  const [entries, setEntries]   = useState([]);
-  const [editId, setEditId]     = useState(null);
-  const [view, setView]         = useState("list");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
+  const [entries, setEntries] = useState([]);
+  const [editId, setEditId] = useState(null);
+  const [view, setView] = useState("list");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const loadRecords = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await fetchTrackers();
       setEntries(Array.isArray(data) ? data : []);
-    } catch {
-      setError("Failed to load records.");
+    } catch (err) {
+      setError(err.message || "Failed to load records.");
     } finally {
       setLoading(false);
     }
@@ -28,6 +29,7 @@ export function useTracker() {
 
   const handleSave = async (status) => {
     try {
+      if (!formData.serial.trim()) throw new Error("Cylinder serial number is required.");
       setLoading(true);
       setError("");
       if (status === "posted") {
@@ -47,13 +49,15 @@ export function useTracker() {
   };
 
   const handleEdit = (entry) => {
-    setFormData({ serial: entry.serial, location: entry.location, cylinderStatus: entry.cylinderStatus });
-    setEditId(entry._id);
+    if (entry.status === "posted") return;
+    setFormData({ serial: entry.serial || "", location: entry.location || "Plant", cylinderStatus: entry.cylinderStatus || "Filled" });
+    setEditId(entry._id || entry.id);
+    setError("");
     setView("form");
   };
 
   const handleNewEntry = () => { setFormData(EMPTY); setEditId(null); setError(""); setView("form"); };
-  const handleCancel   = () => { setFormData(EMPTY); setEditId(null); setError(""); setView("list"); };
+  const handleCancel = () => { setFormData(EMPTY); setEditId(null); setError(""); setView("list"); };
 
   return {
     formData, entries, editId, view, loading, error,

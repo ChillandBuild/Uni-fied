@@ -9,6 +9,16 @@ class CylinderReturnCreate(BaseModel):
     customer_name: str
     cylinders: int
     line_items: Optional[Any] = None
+    status: str = "Draft"
+
+
+class CylinderReturnUpdate(BaseModel):
+    return_id: Optional[str] = None
+    return_date: Optional[date] = None
+    customer_name: Optional[str] = None
+    cylinders: Optional[int] = None
+    line_items: Optional[Any] = None
+    status: Optional[str] = None
 
 
 class CylinderReturnOut(BaseModel):

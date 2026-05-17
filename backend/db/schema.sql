@@ -400,6 +400,9 @@ CREATE TABLE IF NOT EXISTS dispatch_entries (
     dispatch_id VARCHAR(20) NOT NULL UNIQUE,
     dispatch_date DATE NOT NULL,
     customer_name VARCHAR(200) NOT NULL,
+    vehicle VARCHAR(100) DEFAULT NULL,
+    driver VARCHAR(100) DEFAULT NULL,
+    route VARCHAR(200) DEFAULT NULL,
     delivery_address TEXT DEFAULT NULL,
     cylinders INT NOT NULL DEFAULT 0,
     line_items JSON DEFAULT NULL,
@@ -496,3 +499,47 @@ CREATE TABLE IF NOT EXISTS safety_checklists (
     status VARCHAR(20) NOT NULL DEFAULT 'Passed',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );;
+
+CREATE TABLE IF NOT EXISTS tracker_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    serial VARCHAR(100) NOT NULL,
+    location VARCHAR(150) NOT NULL,
+    cylinder_status VARCHAR(80) NOT NULL,
+    entry_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);;
+
+DROP PROCEDURE IF EXISTS usp_dispatch_schema_migrate;;
+CREATE PROCEDURE usp_dispatch_schema_migrate()
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'dispatch_entries'
+          AND COLUMN_NAME = 'vehicle'
+    ) THEN
+        ALTER TABLE dispatch_entries ADD COLUMN vehicle VARCHAR(100) DEFAULT NULL AFTER customer_name;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'dispatch_entries'
+          AND COLUMN_NAME = 'driver'
+    ) THEN
+        ALTER TABLE dispatch_entries ADD COLUMN driver VARCHAR(100) DEFAULT NULL AFTER vehicle;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'dispatch_entries'
+          AND COLUMN_NAME = 'route'
+    ) THEN
+        ALTER TABLE dispatch_entries ADD COLUMN route VARCHAR(200) DEFAULT NULL AFTER driver;
+    END IF;
+END;;
+
+CALL usp_dispatch_schema_migrate();;
+DROP PROCEDURE IF EXISTS usp_dispatch_schema_migrate;;

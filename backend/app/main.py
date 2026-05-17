@@ -38,6 +38,7 @@ from app.modules.dashboard.router import router as dashboard_router
 
 # Monitoring
 from app.modules.monitoring.router import router as monitoring_router
+from app.modules.tracker.router import router as tracker_router
 
 
 @asynccontextmanager
@@ -97,8 +98,10 @@ app.include_router(dashboard_router, prefix=API_PREFIX)
 
 # Monitoring
 app.include_router(monitoring_router, prefix=API_PREFIX)
+app.include_router(tracker_router, prefix=API_PREFIX)
 
 
 @app.get("/health", tags=["Health"])
 def health_check() -> dict:
     return {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION}
+

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.database.db import get_connection
 from app.modules.inventory.cylinder_returns import crud
-from app.modules.inventory.cylinder_returns.schemas import CylinderReturnCreate, CylinderReturnOut
+from app.modules.inventory.cylinder_returns.schemas import CylinderReturnCreate, CylinderReturnUpdate, CylinderReturnOut
 
 router = APIRouter(prefix="/inventory/cylinder-returns", tags=["Cylinder Returns"])
 
@@ -14,11 +14,13 @@ def get_db():
         conn.close()
 
 
+@router.get("", response_model=list[CylinderReturnOut])
 @router.get("/", response_model=list[CylinderReturnOut])
 def list_returns(db=Depends(get_db)):
     return crud.list_returns(db)
 
 
+@router.post("", response_model=CylinderReturnOut, status_code=201)
 @router.post("/", response_model=CylinderReturnOut, status_code=201)
 def create_return(data: CylinderReturnCreate, db=Depends(get_db)):
     if crud.get_return(db, data.return_id):
@@ -29,6 +31,24 @@ def create_return(data: CylinderReturnCreate, db=Depends(get_db)):
 @router.get("/{return_id}", response_model=CylinderReturnOut)
 def get_return(return_id: str, db=Depends(get_db)):
     row = crud.get_return(db, return_id)
+    if not row:
+        raise HTTPException(404, "Return entry not found")
+    return row
+
+
+@router.put("/{return_id}", response_model=CylinderReturnOut)
+def update_return(return_id: str, data: CylinderReturnUpdate, db=Depends(get_db)):
+    current = crud.get_return(db, return_id)
+    if not current:
+        raise HTTPException(404, "Return entry not found")
+    if current.get("status") == crud.POSTED_STATUS:
+        raise HTTPException(409, "Posted return entries cannot be edited")
+    return crud.update_return(db, return_id, data)
+
+
+@router.patch("/{return_id}/post", response_model=CylinderReturnOut)
+def post_return(return_id: str, db=Depends(get_db)):
+    row = crud.post_return(db, return_id)
     if not row:
         raise HTTPException(404, "Return entry not found")
     return row

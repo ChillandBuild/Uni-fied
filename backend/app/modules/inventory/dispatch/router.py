@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.database.db import get_connection
 from app.modules.inventory.dispatch import crud
-from app.modules.inventory.dispatch.schemas import DispatchCreate, DispatchOut
+from app.modules.inventory.dispatch.schemas import DispatchCreate, DispatchUpdate, DispatchOut
 
 router = APIRouter(prefix="/inventory/dispatch", tags=["Dispatch"])
 
@@ -14,11 +14,13 @@ def get_db():
         conn.close()
 
 
+@router.get("", response_model=list[DispatchOut])
 @router.get("/", response_model=list[DispatchOut])
 def list_dispatches(db=Depends(get_db)):
     return crud.list_dispatches(db)
 
 
+@router.post("", response_model=DispatchOut, status_code=201)
 @router.post("/", response_model=DispatchOut, status_code=201)
 def create_dispatch(data: DispatchCreate, db=Depends(get_db)):
     if crud.get_dispatch(db, data.dispatch_id):
@@ -29,6 +31,24 @@ def create_dispatch(data: DispatchCreate, db=Depends(get_db)):
 @router.get("/{dispatch_id}", response_model=DispatchOut)
 def get_dispatch(dispatch_id: str, db=Depends(get_db)):
     row = crud.get_dispatch(db, dispatch_id)
+    if not row:
+        raise HTTPException(404, "Dispatch entry not found")
+    return row
+
+
+@router.put("/{dispatch_id}", response_model=DispatchOut)
+def update_dispatch(dispatch_id: str, data: DispatchUpdate, db=Depends(get_db)):
+    current = crud.get_dispatch(db, dispatch_id)
+    if not current:
+        raise HTTPException(404, "Dispatch entry not found")
+    if current.get("status") == crud.POSTED_STATUS:
+        raise HTTPException(409, "Posted dispatch entries cannot be edited")
+    return crud.update_dispatch(db, dispatch_id, data)
+
+
+@router.patch("/{dispatch_id}/post", response_model=DispatchOut)
+def post_dispatch(dispatch_id: str, db=Depends(get_db)):
+    row = crud.post_dispatch(db, dispatch_id)
     if not row:
         raise HTTPException(404, "Dispatch entry not found")
     return row
